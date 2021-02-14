@@ -1,0 +1,61 @@
+from typing import Callable
+from kubernetes.client import *
+try:
+    from eks import KubeClient
+except ImportError:
+    from .eks import KubeClient
+
+SERVICE_ACCOUNT_NAME= "eks-cluster-manager-sa"
+
+KubeClientFactory = Callable[[str, str, str], KubeClient]
+
+AWS_AUTH = "aws-auth"
+KUBE_SYSTEM= "kube-system"
+
+
+
+class Bootstrapper(object):
+    def __init__(self, kube_client_factory: KubeClientFactory, parameters: dict):
+        self.kube_client_factory = kube_client_factory
+        self.parameter = parameters
+
+    def execute(self):
+        response_data = {"Success": "True"}
+        cluster_name = event["ResourceProperties"]["clusterName"]
+        cluster_endpoint = event["ResourceProperties"]["ClusterEndpoint"]
+        cluster_ca_cert = event["ResourceProperties"]["ClusterCACert"]
+        worker_node_role = event["ResourceProperties"]["WorkerNodeRole"]
+        account_id = event["ResourceProperties"]["AccountId"]
+        resources = []
+
+        with self.kube_client_factory(cluster_name, cluster_endpoint, cluster_ca_cert) as kube_client:
+            resources.append(create_aws_auth_map(kube_client, worker_node_role, account_id))
+
+
+        return response_data
+
+
+def create_aws_auth_map(kube_client: KubeClient, worker_node_role: str, account_id: str) -> str:
+    rolesString = ['- rolearn: %s' % worker_node_role,
+                   '  username: system:node:{{EC2PrivateDNSName}}',
+                   '  groups:',
+                   '    - system:bootstrappers',
+                   '    - system:nodes',
+                   '- rolearn: arn:aws:iam::%s:role/CHANGEIT' % account_id,
+                   '  username: admin',
+                   '  groups:',
+                   '    - system:masters'
+                   ]
+    config_map = V1ConfigMap(
+        api_version="v1",
+        kind="ConfigMap",
+        metadata=V1ObjectMeta(
+            name=AWS_AUTH,
+            namespace=KUBE_SYSTEM),
+        data={
+            "mapRoles": '\n'.join(rolesString)
+        }
+    )
+    return kube_client.create_config_map(name=AWS_AUTH, namespace=KUBE_SYSTEM, config_map=config_map)
+
+
