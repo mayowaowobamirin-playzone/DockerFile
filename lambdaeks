@@ -1,0 +1,30 @@
+from bootstrap import Bootstrapper, KubeClientFactory
+from eks import KubeClient
+
+import boto3
+from botocore.session import Session
+from botocore.config import Config
+from botocore.signers import RequestSigner
+import cfnresponse
+
+def create_kube_client_factory(session: Session, config: Config) -> KubeClientFactory:
+    return lambda cluster_name, cluster_endpoint, cluster_ca_cert: KubeClient(session, config, cluster_name, cluster_endpoint, cluster_ca_cert)
+
+def handle(evt, ctx):
+    session = boto3.session.Session()
+        # Get ServiceID required by class RequestSigner
+    client = session.client(service_name='sts')
+
+    bootstrap = Bootstrapper( create_kube_client_factory(session, client) ,{})
+
+    response_data = bootstrap.execute(evt)
+
+    cfnresponse.send(evt, ctx, "SUCCESS", response_data)
+
+
+handle({
+    "ResourceProperties": 
+        {
+            "clusterName" : "SomeClusterName"
+        }
+}, {})
