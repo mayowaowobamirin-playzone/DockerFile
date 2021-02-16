@@ -1,0 +1,9 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+        python: 3.8
+  build:
+    commands:
+      - sam build
+      - sam deploy --s3-bucket ${S3_BUCKET} --kms-key-id ${KMS_KEY}
