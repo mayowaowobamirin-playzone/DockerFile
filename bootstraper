@@ -1,9 +1,7 @@
 from typing import Callable
 from kubernetes.client import *
-try:
-    from eks import KubeClient
-except ImportError:
-    from .eks import KubeClient
+from eks import KubeClient
+
 
 SERVICE_ACCOUNT_NAME= "eks-cluster-manager-sa"
 
@@ -19,7 +17,7 @@ class Bootstrapper(object):
         self.kube_client_factory = kube_client_factory
         self.parameter = parameters
 
-    def execute(self):
+    def execute(self, event):
         response_data = {"Success": "True"}
         cluster_name = event["ResourceProperties"]["clusterName"]
         cluster_endpoint = event["ResourceProperties"]["ClusterEndpoint"]
@@ -57,5 +55,8 @@ def create_aws_auth_map(kube_client: KubeClient, worker_node_role: str, account_
         }
     )
     return kube_client.create_config_map(name=AWS_AUTH, namespace=KUBE_SYSTEM, config_map=config_map)
+
+
+
 
 
