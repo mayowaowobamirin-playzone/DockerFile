@@ -1,0 +1,26 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+Description: SAM project for K8
+
+Resources:
+  K8ManagerFunction:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri: src/
+      Handler: lambda_handler.handler
+      Description: Associates and enables TGW attachments to the TGW routing table
+      Environment:
+        Variables:
+          INFO: "Test"
+      MemorySize: 1024 # megabytes
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "eks:*"
+                - "ec2:*"
+              Resource: "*"
+      Runtime: python3.8
+      Timeout: 30 # second
