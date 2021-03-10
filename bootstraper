@@ -13,9 +13,8 @@ KUBE_SYSTEM= "kube-system"
 
 
 class Bootstrapper(object):
-    def __init__(self, kube_client_factory: KubeClientFactory, parameters: dict):
+    def __init__(self, kube_client_factory: KubeClientFactory):
         self.kube_client_factory = kube_client_factory
-        self.parameter = parameters
 
     def execute(self, event):
         response_data = {"Success": "True"}
@@ -26,7 +25,9 @@ class Bootstrapper(object):
         account_id = event["ResourceProperties"]["AccountId"]
         resources = []
 
-        with self.kube_client_factory(cluster_name, cluster_endpoint, cluster_ca_cert) as kube_client:
+        factory = self.kube_client_factory(cluster_name, cluster_endpoint, cluster_ca_cert) 
+        
+        with factory as kube_client:
             resources.append(create_aws_auth_map(kube_client, worker_node_role, account_id))
 
 
@@ -39,8 +40,8 @@ def create_aws_auth_map(kube_client: KubeClient, worker_node_role: str, account_
                    '  groups:',
                    '    - system:bootstrappers',
                    '    - system:nodes',
-                   '- rolearn: arn:aws:iam::%s:role/CHANGEIT' % account_id,
-                   '  username: admin',
+                   '- rolearn: ',
+                   '  username: adminuser:{{SessionName}}',
                    '  groups:',
                    '    - system:masters'
                    ]
