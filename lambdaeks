@@ -1,30 +1,46 @@
 from bootstrap import Bootstrapper, KubeClientFactory
 from eks import KubeClient
-
-import boto3
 from botocore.session import Session
 from botocore.config import Config
+import boto3
 from botocore.signers import RequestSigner
+
 import cfnresponse
 
+
+def handler(evt, ctx):
+#     if evt["RequestType"] == "Delete":
+#         return {"Success": "True"}
+    # client = Session
+    config = Config
+    session = boto3.session.Session()
+    regionus = "us-east-1"
+    bootstrapper = Bootstrapper(create_kube_client_factory(session, config))
+
+
+
+    result = bootstrapper.execute(evt)
+    
+    print(result)
+    response_status = cfnresponse.SUCCESS
+    response_data = {"Success": result}
+    if 'ResponseURL' in evt:
+        cfnresponse.send(evt, ctx, response_status, response_data, result)
+        
+    
+    
 def create_kube_client_factory(session: Session, config: Config) -> KubeClientFactory:
     return lambda cluster_name, cluster_endpoint, cluster_ca_cert: KubeClient(session, config, cluster_name, cluster_endpoint, cluster_ca_cert)
-
-def handle(evt, ctx):
-    session = boto3.session.Session()
-        # Get ServiceID required by class RequestSigner
-    client = session.client(service_name='sts')
-
-    bootstrap = Bootstrapper( create_kube_client_factory(session, client) ,{})
-
-    response_data = bootstrap.execute(evt)
-
-    cfnresponse.send(evt, ctx, "SUCCESS", response_data)
-
-
-handle({
-    "ResourceProperties": 
-        {
-            "clusterName" : "SomeClusterName"
-        }
-}, {})
+    
+  
+import json
+#handler(json.loads("""{
+#  "ResourceProperties": {
+#    "ResponseURL": "https://localhost:12345",
+#    "clusterName": "cteekslambda",
+#    "ClusterEndpoint": "https://631ADD4815AAA5722A3B34DAC1BB237B.sk1.us-east-1.eks.amazonaws.com",
+#    "ClusterCACert": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN5RENDQWJDZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeE1ETXdOekl4TURReU9Wb1hEVE14TURNd05USXhNRFF5T1Zvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTGI5ClN0YXRsdFpra2hRb05JNGxGU210KytaYUNIQktBNlJNaURXWjd6eDhMcmpkdzgzQXpSYjBXNWxrQ2FLME9IM3AKVDBmdEVnU2tENm1lYUY5R0tlQzNHSnFycEY0SjNDREZSOG5RZDN4L3YvS2JmcFByME9SSlBpbzFYTDVqZWI4bAoxb2dLWHhNRjNyUm9jdkdBaTJRclM5SGhTNDhmN2hLUTNPN1c1akt1MlpwWS9YdS9WL3NSWWIzZkFjL0tmd1ljCnJvTEdtMC9IUE8yLzhzaDBRUWt3K3RMcFNhVU03T3N1QmhUakh2aUlJSitlWml3RTFiUDh2VzIvVm4xR0tBQ2wKNjRLcFY3SWNOelNxMnVqQzJwekNVYmZ4aUtqTm0zN1R5eHhFVm0xZ0gyNTVjT0hTNkhMcXNxeThrbXlTciszdAo1RkY4SVVWQWJGbmF2amtOd3dVQ0F3RUFBYU1qTUNFd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFFYzg2SHpNRVZXS1ZqNG5TbkwzRTNPTi9ZakUKNXovUjNlUFJpL1V4NnE1UDI0SWVwVDZqQ2tEL1VVMTFsdmlsT3dZd09YN1pjMU5kcllxWlNScUN4Q0xUQlhFRQpTS0YvdUdsR3U0NzJlY0dBL2kvSktCTTZpTHlNZGV5STVJQ3hnSnJJemtIQm1VcTM4b0phOGl0NFJwMjNYaWVqClNzUnlZUFNPZEMycG1VRnkrUmdwdmt5a0ZWRjQvZVE3VkZ6NUt3eGgybjZ2L1RDck1URThzRWdleCtEdHFxK08KN1cybW9Ibm9HOTg2OWtoOFpyV3J5TitnWmJHWDlPSWhLRXpnN1VmbjVpbDkzRUFseXE4MmRJUmFPRUd5Tjh2RApROVNwR0tjYXc5MEJYUHVZdXBKUmd3YURRdnVqckZoa21wUkhJRUVGa3Rjczl0Qk1vMzZtVlNua0R0QT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=",
+#    "WorkerNodeRole": "arn:aws:iam::915537878418:role/nonprod-eks",
+#    "AccountId": "915537878418"
+#  }
+#}"""), {})
